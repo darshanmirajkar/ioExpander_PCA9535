@@ -52,10 +52,21 @@ ioExpander::ioExpander(uint8_t address, uint8_t sda, uint8_t scl, uint8_t interr
 	};
 
 /**
+ * Check for Device
+ */
+uint8_t ioExpander::deviceStatus(){
+	_wire->begin(_sda, _scl);
+
+	_wire->beginTransmission(_address);
+	return _wire->endTransmission();
+
+}
+
+/**
  * wake up i2c controller
  */
 void ioExpander::begin(){
-	_wire->begin(_sda, _scl);
+	bool val = _wire->begin(_sda, _scl);
 
 	// Check if there are pins to set low
 	if (writeMode>0 || readMode>0){
@@ -227,3 +238,4 @@ uint16_t ioExpander::digitalReadAll(){
 
 		return byteRead;
 }
+

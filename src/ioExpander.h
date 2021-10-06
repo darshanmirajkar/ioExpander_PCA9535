@@ -67,6 +67,7 @@ public:
 
 
 	void begin();
+	uint8_t deviceStatus();
 	void pinMode(uint8_t pin, uint8_t mode);
 
 	void readBuffer(bool force = true);
@@ -103,3 +104,4 @@ private:
 };
 
 #endif
+
