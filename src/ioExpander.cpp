@@ -88,6 +88,7 @@ void ioExpander::begin(){
 	lastReadMillis = millis();
 }
 
+
 /**
  * Set if fin is OUTPUT or INPUT
  * @param pin: pin to set
@@ -127,8 +128,11 @@ void ioExpander::pinMode(uint8_t pin, uint8_t mode){
 // 
 uint8_t ioExpander::digitalRead(uint8_t pin)
 {
+	delay(10);
     uint8_t value = (bit(pin) & readModePullUp) ? HIGH : LOW;
-
+	// _wire->beginTransmission(_address);     //Begin the transmission to ioExpander
+	
+	// _wire->endTransmission();
     if ((((bit(pin) & (readModePullDown & byteBuffered)) > 0) or (bit(pin) & (readModePullUp & ~byteBuffered)) > 0))
     {
         if ((bit(pin) & byteBuffered) > 0)
@@ -185,6 +189,7 @@ uint8_t ioExpander::digitalRead(uint8_t pin)
  */
 void ioExpander::digitalWrite(uint8_t pin, uint8_t value){
 	_wire->beginTransmission(_address);     //Begin the transmission to ioExpander
+	_wire->write(WRITE_REG);
 	if (value==HIGH){
 		writeByteBuffered = writeByteBuffered | bit(pin);
 		byteBuffered  = writeByteBuffered | bit(pin);
@@ -201,7 +206,7 @@ void ioExpander::digitalWrite(uint8_t pin, uint8_t value){
 
 	byteBuffered = (writeByteBuffered & writeMode) | (initialBuffer & readMode);
 	// Serial.println(writeByteBuffered,BIN);
-	// _wire->write(WRITE_REG);
+	
 	
 	_wire->endTransmission(); 
 
@@ -238,4 +243,5 @@ uint16_t ioExpander::digitalReadAll(){
 
 		return byteRead;
 }
+
 
