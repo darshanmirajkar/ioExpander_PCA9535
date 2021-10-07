@@ -128,11 +128,10 @@ void ioExpander::pinMode(uint8_t pin, uint8_t mode){
 // 
 uint8_t ioExpander::digitalRead(uint8_t pin)
 {
-	delay(10);
+	delay(100);
     uint8_t value = (bit(pin) & readModePullUp) ? HIGH : LOW;
-	// _wire->beginTransmission(_address);     //Begin the transmission to ioExpander
 	
-	// _wire->endTransmission();
+	
     if ((((bit(pin) & (readModePullDown & byteBuffered)) > 0) or (bit(pin) & (readModePullUp & ~byteBuffered)) > 0))
     {
         if ((bit(pin) & byteBuffered) > 0)
@@ -146,7 +145,9 @@ uint8_t ioExpander::digitalRead(uint8_t pin)
     }
     else if ((millis() > ioExpander::lastReadMillis + READ_ELAPSED_TIME))
     {
+		
         _wire->requestFrom(_address, (uint8_t)2); // Begin transmission to PCF8574 with the buttons
+		
         lastReadMillis = millis();
         if (_wire->available()) // If bytes are available to be recieved
         {
@@ -188,8 +189,8 @@ uint8_t ioExpander::digitalRead(uint8_t pin)
  * @param value
  */
 void ioExpander::digitalWrite(uint8_t pin, uint8_t value){
-	_wire->beginTransmission(_address);     //Begin the transmission to ioExpander
-	_wire->write(WRITE_REG);
+	// _wire->beginTransmission(_address);     //Begin the transmission to ioExpander
+	// _wire->write(WRITE_REG);
 	if (value==HIGH){
 		writeByteBuffered = writeByteBuffered | bit(pin);
 		byteBuffered  = writeByteBuffered | bit(pin);
