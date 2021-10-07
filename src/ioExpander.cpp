@@ -189,7 +189,7 @@ uint8_t ioExpander::digitalRead(uint8_t pin)
  * @param value
  */
 void ioExpander::digitalWrite(uint8_t pin, uint8_t value){
-	// _wire->beginTransmission(_address);     //Begin the transmission to ioExpander
+	_wire->beginTransmission(_address);     //Begin the transmission to ioExpander
 	// _wire->write(WRITE_REG);
 	if (value==HIGH){
 		writeByteBuffered = writeByteBuffered | bit(pin);
