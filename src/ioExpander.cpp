@@ -122,7 +122,6 @@ void ioExpander::pinMode(uint8_t pin, uint8_t mode){
  * @param pin
  * @return
  */
-<<<<<<< HEAD
 uint8_t ioExpander::digitalRead(uint8_t pin){
 	uint8_t value = LOW;
 	if ((bit(pin) & writeMode)>0){
@@ -167,64 +166,6 @@ uint8_t ioExpander::digitalRead(uint8_t pin){
 		byteBuffered = ~bit(pin) & byteBuffered;
 	}
 	return value;
-=======
-// 
-uint8_t ioExpander::digitalRead(uint8_t pin)
-{
-	delay(100);
-    uint8_t value = (bit(pin) & readModePullUp) ? HIGH : LOW;
-	
-	
-    if ((((bit(pin) & (readModePullDown & byteBuffered)) > 0) or (bit(pin) & (readModePullUp & ~byteBuffered)) > 0))
-    {
-        if ((bit(pin) & byteBuffered) > 0)
-        {
-            value = HIGH;
-        }
-        else
-        {
-            value = LOW;
-        }
-    }
-    else if ((millis() > ioExpander::lastReadMillis + READ_ELAPSED_TIME))
-    {
-		
-        _wire->requestFrom(_address, (uint8_t)2); // Begin transmission to PCF8574 with the buttons
-		
-        lastReadMillis = millis();
-        if (_wire->available()) // If bytes are available to be recieved
-        {
-            uint16_t iInput = _wire->read(); // Read a uint16_t
-            iInput |= _wire->read() << 8;    // Read a uint16_t
-
-            if ((readModePullDown & iInput) > 0 or (readModePullUp & ~iInput) > 0)
-            {
-                byteBuffered = (byteBuffered & ~readMode) | (uint16_t)iInput;
-                if ((bit(pin) & byteBuffered) > 0)
-                {
-                    value = HIGH;
-                }
-                else
-                {
-                    value = LOW;
-                }
-            }
-        }
-    }
-    if ((bit(pin) & readModePullDown) and value == HIGH)
-    {
-        byteBuffered = bit(pin) ^ byteBuffered;
-    }
-    else if ((bit(pin) & readModePullUp) and value == LOW)
-    {
-        byteBuffered = bit(pin) ^ byteBuffered;
-    }
-    else if (bit(pin) & writeByteBuffered)
-    {
-        value = HIGH;
-    }
-    return value;
->>>>>>> b813eb6b58045643a142132b46bea5746296a904
 };
 
 /**
@@ -234,10 +175,6 @@ uint8_t ioExpander::digitalRead(uint8_t pin)
  */
 void ioExpander::digitalWrite(uint8_t pin, uint8_t value){
 	_wire->beginTransmission(_address);     //Begin the transmission to ioExpander
-<<<<<<< HEAD
-=======
-	// _wire->write(WRITE_REG);
->>>>>>> b813eb6b58045643a142132b46bea5746296a904
 	if (value==HIGH){
 		writeByteBuffered = writeByteBuffered | bit(pin);
 	}else{
@@ -275,5 +212,4 @@ uint16_t ioExpander::digitalReadAll(){
 	_wire->endTransmission(); 
 	return byteRead;
 }
-
 
