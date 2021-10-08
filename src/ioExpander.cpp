@@ -51,6 +51,7 @@ ioExpander::ioExpander(uint8_t address, uint8_t sda, uint8_t scl, uint8_t interr
 		_usingInterrupt = true;
 	};
 
+
 /**
  * Check for Device
  */
@@ -61,156 +62,28 @@ uint8_t ioExpander::deviceStatus(){
 	return _wire->endTransmission();
 
 }
-
 /**
  * wake up i2c controller
  */
 void ioExpander::begin(){
-	bool val = _wire->begin(_sda, _scl);
+	_wire->begin(_sda, _scl);
 
 	// Check if there are pins to set low
 	if (writeMode>0 || readMode>0){
 		_wire->beginTransmission(_address);
 		uint16_t usedPin = writeMode | readMode;
-		// _wire->write(INPUT_OUTPUT_CONFIG_REG);	
+		_wire->write(INPUT_OUTPUT_CONFIG_REG);	
 		_wire->write((uint8_t) ~usedPin);
 		_wire->write((uint8_t) (~(usedPin >> 8)));
-		initialBuffer = writeModeUp | readModePullUp;
-		byteBuffered = initialBuffer;
-		writeByteBuffered = writeModeUp;
-
 		_wire->endTransmission();
 	}
 
-	
-	ioExpander::attachInterrupt();
+	// If using interrupt set interrupt value to pin
+	attachInterrupt();
 	// inizialize last read
 	lastReadMillis = millis();
 }
 
-
-/**
- * Set if fin is OUTPUT or INPUT
- * @param pin: pin to set
- * @param mode: mode, supported only INPUT or OUTPUT (to semplify)
- */
-void ioExpander::pinMode(uint8_t pin, uint8_t mode){
-	if (mode == OUTPUT){
-		writeMode = writeMode | bit(pin);
-		writeModeUp = writeModeUp | bit(pin);
-		readMode =  readMode & ~bit(pin);
-		readModePullDown 	=	readModePullDown 	& 	~bit(pin);
-		readModePullUp 		=	readModePullUp 		& 	~bit(pin);
-	}else if (mode == INPUT){
-		writeMode = writeMode & ~bit(pin);
-
-		readMode 			=   readMode 			| bit(pin);
-		readModePullDown 	=	readModePullDown 	| bit(pin);
-		readModePullUp 		=	readModePullUp 		& ~bit(pin);
-	}else if (mode == INPUT_PULLUP){
-		writeMode = writeMode & ~bit(pin);
-
-		readMode 			=   readMode 			| bit(pin);
-		readModePullDown 	=	readModePullDown 	& ~bit(pin);
-		readModePullUp 		=	readModePullUp 		| bit(pin);
-	}else{
-		Serial.println("Mode NOT Supported");
-	}
-};
-
-
-/**
- * Read value of specified pin
- * Debounce read more fast than 10millis, non managed for interrupt mode
- * @param pin
- * @return
- */
-// 
-uint8_t ioExpander::digitalRead(uint8_t pin)
-{
-	delay(10);
-    uint8_t value = (bit(pin) & readModePullUp) ? HIGH : LOW;
-	// _wire->beginTransmission(_address);     //Begin the transmission to ioExpander
-	
-	// _wire->endTransmission();
-    if ((((bit(pin) & (readModePullDown & byteBuffered)) > 0) or (bit(pin) & (readModePullUp & ~byteBuffered)) > 0))
-    {
-        if ((bit(pin) & byteBuffered) > 0)
-        {
-            value = HIGH;
-        }
-        else
-        {
-            value = LOW;
-        }
-    }
-    else if ((millis() > ioExpander::lastReadMillis + READ_ELAPSED_TIME))
-    {
-        _wire->requestFrom(_address, (uint8_t)2); // Begin transmission to PCF8574 with the buttons
-        lastReadMillis = millis();
-        if (_wire->available()) // If bytes are available to be recieved
-        {
-            uint16_t iInput = _wire->read(); // Read a uint16_t
-            iInput |= _wire->read() << 8;    // Read a uint16_t
-
-            if ((readModePullDown & iInput) > 0 or (readModePullUp & ~iInput) > 0)
-            {
-                byteBuffered = (byteBuffered & ~readMode) | (uint16_t)iInput;
-                if ((bit(pin) & byteBuffered) > 0)
-                {
-                    value = HIGH;
-                }
-                else
-                {
-                    value = LOW;
-                }
-            }
-        }
-    }
-    if ((bit(pin) & readModePullDown) and value == HIGH)
-    {
-        byteBuffered = bit(pin) ^ byteBuffered;
-    }
-    else if ((bit(pin) & readModePullUp) and value == LOW)
-    {
-        byteBuffered = bit(pin) ^ byteBuffered;
-    }
-    else if (bit(pin) & writeByteBuffered)
-    {
-        value = HIGH;
-    }
-    return value;
-};
-
-/**
- * Write on pin
- * @param pin
- * @param value
- */
-void ioExpander::digitalWrite(uint8_t pin, uint8_t value){
-	_wire->beginTransmission(_address);     //Begin the transmission to ioExpander
-	_wire->write(WRITE_REG);
-	if (value==HIGH){
-		writeByteBuffered = writeByteBuffered | bit(pin);
-		byteBuffered  = writeByteBuffered | bit(pin);
-	}else{
-		writeByteBuffered = writeByteBuffered & ~bit(pin);
-		byteBuffered  = writeByteBuffered & ~bit(pin);
-	}
-
-	byteBuffered = (writeByteBuffered & writeMode) | (resetInitial & readMode);
-
-
-	_wire->write((uint8_t) byteBuffered);
-	_wire->write((uint8_t) (byteBuffered >> 8));
-
-	byteBuffered = (writeByteBuffered & writeMode) | (initialBuffer & readMode);
-	// Serial.println(writeByteBuffered,BIN);
-	
-	
-	_wire->endTransmission(); 
-
-};
 
 void ioExpander::attachInterrupt(){
 	// If using interrupt set interrupt value to pin
@@ -225,23 +98,119 @@ void ioExpander::detachInterrupt(){
 		::detachInterrupt(digitalPinToInterrupt(_interruptPin));
 	}
 }
+/**
+ * Set if fin is OUTPUT or INPUT
+ * @param pin: pin to set
+ * @param mode: mode, supported only INPUT or OUTPUT (to semplify)
+ */
+void ioExpander::pinMode(uint8_t pin, uint8_t mode){
+	if (mode == OUTPUT){
+		writeMode = writeMode | bit(pin);
+		readMode =  readMode & ~bit(pin);
+	}else if (mode == INPUT){
+		writeMode = writeMode & ~bit(pin);
+		readMode =   readMode | bit(pin);;
+	}else{
+		Serial.println("Mode NOT Supported");
+	}
+};
 
-uint16_t ioExpander::digitalReadAll(){
+
+/**
+ * Read value of specified pin
+ * Debounce read more fast than 10millis, non managed for interrupt mode
+ * @param pin
+ * @return
+ */
+uint8_t ioExpander::digitalRead(uint8_t pin){
+	uint8_t value = LOW;
+	if ((bit(pin) & writeMode)>0){
+		if ((bit(pin) & writeByteBuffered)>0){
+			  value = HIGH;
+		  }else{
+			  value = LOW;
+		  }
+		return value;
+	}
+	// Check if pin already HIGH than read and prevent reread of i2c
+	if ((bit(pin) & byteBuffered)>0){
+		// Serial.println("read req 1");
+		value = HIGH;
+	 }else if ((/*(bit(pin) & byteBuffered)<=0 && */millis() > ioExpander::lastReadMillis+READ_ELAPSED_TIME) /*|| _usingInterrupt*/){
+		// Serial.println("read req 2");
+		_wire->beginTransmission(_address);
+		_wire->write(READ_REG);
+		_wire->endTransmission(); 
+		// Serial.println("Num of bytes: "+String(_wire->requestFrom(_address,(uint8_t)2)));// Begin transmission to ioExpander with the buttons
 		_wire->requestFrom(_address,(uint8_t)2);
 		lastReadMillis = millis();
-		if(_wire->available())   // If bytes are available to be recieved
+		if(_wire->available()>0)   // If bytes are available to be recieved
 		{
-			  uint16_t iInput = _wire->read();// Read a uint16_t
+			// Serial.println("data received");
+			uint16_t iInput = _wire->read();// Read a uint16_t
 				iInput |= _wire->read() << 8;// Read a uint16_t
-			  if ((readModePullDown & iInput)>0 or (readModePullUp & ~iInput)>0){
-				  byteBuffered = (byteBuffered & ~readMode) | (uint16_t)iInput;
 
-			  }
+				// Serial.println(iInput, BIN);
+
+			if ((iInput >0 )&& (readMode >0)){
+				// Serial.println("Pin toggled");
+				byteBuffered = byteBuffered | (uint16_t)iInput;
+				if ((bit(pin) & byteBuffered)>0){
+					value = HIGH;
+				}
+			}
 		}
-		uint16_t byteRead = byteBuffered | writeByteBuffered;
-		byteBuffered = (initialBuffer & readMode) | (byteBuffered  & ~readMode); //~readMode & byteBuffered;
+	}
+	// If HIGH set to low to read buffer only one time
+	if (value==HIGH){
+		byteBuffered = ~bit(pin) & byteBuffered;
+	}
+	return value;
+};
 
-		return byteRead;
+/**
+ * Write on pin
+ * @param pin
+ * @param value
+ */
+void ioExpander::digitalWrite(uint8_t pin, uint8_t value){
+	_wire->beginTransmission(_address);     //Begin the transmission to ioExpander
+	if (value==HIGH){
+		writeByteBuffered = writeByteBuffered | bit(pin);
+	}else{
+		writeByteBuffered = writeByteBuffered & ~bit(pin);
+	}
+
+	writeByteBuffered = writeByteBuffered & writeMode;
+	// Serial.println(writeByteBuffered,BIN);
+	_wire->write(WRITE_REG);
+	_wire->write((uint8_t) writeByteBuffered);
+	_wire->write((uint8_t) (writeByteBuffered >> 8));
+	_wire->endTransmission(); 
+
+};
+
+
+uint16_t ioExpander::digitalReadAll(){
+	delay(100);
+	_wire->beginTransmission(_address);
+	_wire->write(READ_REG);
+	_wire->endTransmission();
+	_wire->requestFrom(_address,(uint8_t)2);
+	lastReadMillis = millis();
+	if(_wire->available())   // If bytes are available to be recieved
+	{
+			uint16_t iInput = _wire->read();// Read a uint16_t
+			iInput |= _wire->read() << 8;// Read a uint16_t
+			if ((iInput)>0 or ( ~iInput)>0){
+				byteBuffered = (byteBuffered & ~readMode) | (uint16_t)iInput;
+
+			}
+	}
+	uint16_t byteRead = byteBuffered | writeByteBuffered;
+	byteBuffered = ( readMode) | (byteBuffered  & ~readMode); //~readMode & byteBuffered;
+	_wire->endTransmission(); 
+	return byteRead;
 }
 
 

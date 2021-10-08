@@ -33,8 +33,8 @@
 #define READ_ELAPSED_TIME		10
 
 #define INPUT_OUTPUT_CONFIG_REG	0X06
-#define READ_REG			0x00
-#define WRITE_REG			0x02
+#define READ_REG				0x00
+#define WRITE_REG				0x02
 
 #define P0_0  	0      
 #define P0_1  	1
@@ -45,7 +45,7 @@
 #define P0_6  	6
 #define P0_7  	7
 #define P1_0  	8
-#define P1_1	9
+#define P1_1   	9
 #define P1_2  	10
 #define P1_3  	11
 #define P1_4  	12
@@ -61,21 +61,19 @@ public:
 
 	// ioExpander(uint8_t address);
 	ioExpander(uint8_t address,  uint8_t sda, uint8_t scl);
-	ioExpander(uint8_t address, uint8_t sda, uint8_t scl, uint8_t interruptPin,  void (*interruptFunction)() );
 
-	// ioExpander(uint8_t address, uint8_t sda, uint8_t scl, uint8_t interruptPin,  void (*interruptFunction)());
+	ioExpander(uint8_t address, uint8_t sda, uint8_t scl, uint8_t interruptPin,  void (*interruptFunction)());
 
-
-	void begin();
 	uint8_t deviceStatus();
+	void begin();
 	void pinMode(uint8_t pin, uint8_t mode);
 
 	void readBuffer(bool force = true);
 	uint8_t digitalRead(uint8_t pin);
 	void digitalWrite(uint8_t pin, uint8_t value);
-	uint16_t digitalReadAll();
 	void attachInterrupt();
 	void detachInterrupt();
+	uint16_t digitalReadAll();
 
 private:
 	uint8_t _address;
@@ -84,18 +82,13 @@ private:
 	uint8_t _scl = SCL;
 
 	TwoWire *_wire;
-	
+
 	bool _usingInterrupt = false;
 	uint8_t _interruptPin = 2;
 	void (*_interruptFunction)(){};
 
 	uint16_t writeMode 	= 	0x00;
-	uint16_t writeModeUp 	= 	0x00;
 	uint16_t readMode 	= 	0x00;
-	uint16_t readModePullDown = 0x00;
-	uint16_t readModePullUp = 0x00;
-	uint16_t initialBuffer= 0x00;
-	uint16_t resetInitial = 0x00;
 	uint16_t byteBuffered = 0;
 	unsigned long lastReadMillis = 0;
 
