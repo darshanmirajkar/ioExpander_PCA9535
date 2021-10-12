@@ -71,11 +71,15 @@ void ioExpander::begin(){
 	// Check if there are pins to set low
 	if (writeMode>0 || readMode>0){
 		_wire->beginTransmission(_address);
-		uint16_t usedPin = writeMode | readMode;
+		uint16_t usedPin = writeMode;
 		_wire->write(INPUT_OUTPUT_CONFIG_REG);	
 		_wire->write((uint8_t) ~usedPin);
+		_wire->endTransmission();
+		_wire->beginTransmission(_address);
+		_wire->write(INPUT_OUTPUT_CONFIG_REG+1);	
 		_wire->write((uint8_t) (~(usedPin >> 8)));
 		_wire->endTransmission();
+		Serial.println((uint16_t)~usedPin,BIN);
 	}
 
 	// If using interrupt set interrupt value to pin
@@ -106,13 +110,14 @@ void ioExpander::detachInterrupt(){
 void ioExpander::pinMode(uint8_t pin, uint8_t mode){
 	if (mode == OUTPUT){
 		writeMode = writeMode | bit(pin);
-		readMode =  readMode & ~bit(pin);
+		// readMode =  readMode & ~bit(pin);
 	}else if (mode == INPUT){
 		writeMode = writeMode & ~bit(pin);
-		readMode =   readMode | bit(pin);;
+		// readMode =   readMode | bit(pin);
 	}else{
 		Serial.println("Mode NOT Supported");
 	}
+	
 };
 
 
@@ -134,7 +139,7 @@ uint8_t ioExpander::digitalRead(uint8_t pin){
 	}
 	// Check if pin already HIGH than read and prevent reread of i2c
 	if ((bit(pin) & byteBuffered)>0){
-		// Serial.println("read req 1");
+		Serial.println(String(pin)+"read req 1");
 		value = HIGH;
 	 }else if ((/*(bit(pin) & byteBuffered)<=0 && */millis() > ioExpander::lastReadMillis+READ_ELAPSED_TIME) /*|| _usingInterrupt*/){
 		// Serial.println("read req 2");
@@ -150,9 +155,9 @@ uint8_t ioExpander::digitalRead(uint8_t pin){
 			uint16_t iInput = _wire->read();// Read a uint16_t
 				iInput |= _wire->read() << 8;// Read a uint16_t
 
-				// Serial.println(iInput, BIN);
+				Serial.println(iInput,BIN);
 
-			if ((iInput >0 )&& (readMode >0)){
+			if ((iInput >0 )/*&& (readMode >0)*/){
 				// Serial.println("Pin toggled");
 				byteBuffered = byteBuffered | (uint16_t)iInput;
 				if ((bit(pin) & byteBuffered)>0){
